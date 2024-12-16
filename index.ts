@@ -1,5 +1,4 @@
 import ExcelJS from "exceljs";
-
 const test = [
   {
     id: 1,
@@ -72,12 +71,28 @@ const test = [
     id: 11,
     name: "Formula Example",
     formula: "SUM(C2:C10)",
-  },
+  }, {
+    id: 12,
+    name: "Formula Example",
+    merge: "A6:C6", // Intervalo de células que serão mescladas
+    style: {
+      font: { bold: true, size: 14 },
+      alignment: { horizontal: "center", vertical: "middle" },
+      fill: {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFD3D3D3" }, // Cor de preenchimento cinza claro
+      },
+    },
+
+  }
 ];
 
-async function generateExcelDynamic(data: any) {
+
+
+async function generateExcel(data: any) {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("DynamicSheet");
+  const sheet = workbook.addWorksheet("AppSetting");
 
   // Configurar colunas
   sheet.columns = [
@@ -94,28 +109,41 @@ async function generateExcelDynamic(data: any) {
       value: item.value,
     });
 
-    // Aplicar estilos dinamicamente
-    if (item.style) {
-      row.eachCell((cell) => {
-        if (item.style.font) cell.font = item.style.font;
-        if (item.style.fill) cell.fill = item.style.fill;
-        if (item.style.border) cell.border = item.style.border;
-        if (item.style.alignment) cell.alignment = item.style.alignment;
-        if (item.style.numFmt) cell.numFmt = item.style.numFmt;
-      });
-    }
+    // Verificar se é para mesclar células
+    if (item.merge) {
+      sheet.mergeCells(item.merge);
+      const mergedCell = sheet.getCell(item.merge.split(":")[0]); // Obter a primeira célula do intervalo
+      mergedCell.value = item.name; // Preencher com o valor do campo `name`
 
-    // Adicionar fórmula dinamicamente
-    if (item.formula) {
-      const cell = row.getCell(3); // Coluna "Value"
-      cell.value = { formula: item.formula, result: 0 }; // Valor inicial
+      // Aplicar estilos às células mescladas
+      if (item.style) {
+        if (item.style.font) mergedCell.font = item.style.font;
+        if (item.style.fill) mergedCell.fill = item.style.fill;
+        if (item.style.alignment) mergedCell.alignment = item.style.alignment;
+      }
+    } else {
+      // Aplicar estilos dinamicamente às células não mescladas
+      if (item.style) {
+        row.eachCell((cell) => {
+          if (item.style.font) cell.font = item.style.font;
+          if (item.style.fill) cell.fill = item.style.fill;
+          if (item.style.border) cell.border = item.style.border;
+          if (item.style.alignment) cell.alignment = item.style.alignment;
+          if (item.style.numFmt) cell.numFmt = item.style.numFmt;
+        });
+      }
+
+      // Adicionar fórmula dinamicamente
+      if (item.formula) {
+        const cell = row.getCell(3); // Coluna "Value"
+        cell.value = { formula: item.formula, result: 0 }; // Valor inicial
+      }
     }
   });
 
   // Salvar arquivo
-  await workbook.xlsx.writeFile("./dynamic_test.xlsx");
-  console.log("Arquivo Excel gerado: dynamic_test.xlsx");
+  await workbook.xlsx.writeFile("./test.xlsx");
 }
 
 // Executar função dinâmica
-generateExcelDynamic(test).catch(console.error);
+generateExcel(test).catch(console.error);
